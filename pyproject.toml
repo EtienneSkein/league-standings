@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "league-standings"
+version = "1.0.0"
+description = "Calculate a football league table from match results (1974/75 English First Division rules)"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+league-table = "standings.cli:main"
+
+[tool.setuptools]
+packages = ["standings"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
