@@ -9,6 +9,7 @@ test submission, so keep it simple, readable and well tested.
 - Run: `python -m standings data/results_1974-75_week10.csv` (stdin/stdout by default, `-o FILE` to write a file)
 - Test: `.venv/Scripts/python -m pytest` (Windows) / `.venv/bin/pytest` (macOS/Linux)
 - Set up: `python -m venv .venv` then `pip install pytest` (the package itself needs no install)
+- Type check: `pip install ".[typecheck]"`, then `mypy` and `pyright` (both must report no errors; CI enforces it)
 - Must stay compatible with Python 3.9, the `python3` that ships with macOS. Keep `from __future__ import annotations` in modules that use `X | None` hints.
 
 ## Domain rules (do not "modernise" these)
@@ -33,5 +34,5 @@ test submission, so keep it simple, readable and well tested.
 - Output files are written atomically (temp file + `os.replace`). Never write the output over the input file.
 - Standard streams are switched to UTF-8 with Unix (`\n`) line endings in `cli.py`, so output is identical on every platform.
 - `PUBLISHED_FINAL_TABLE` in `tests/test_1974_75_data.py` is copied from the published 1974/75 final table. Never regenerate it from this code; it is the independent check.
-- CI (`.github/workflows/tests.yml`) runs on macOS, Linux and Windows with Python 3.9, 3.12 and 3.13.
+- CI (`.github/workflows/tests.yml`) runs the tests on macOS, Linux and Windows with Python 3.9, 3.12 and 3.13, and runs mypy and pyright. Pyright targets Python 3.9, so newer-only syntax or APIs fail CI.
 - Keep the rules in `table.py`, CSV handling in `csv_io.py` and argument handling in `cli.py`.

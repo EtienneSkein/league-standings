@@ -21,6 +21,20 @@ jobs:
       - run: python -m pip install pytest
       - run: python -m pytest -v
 
+  typecheck:
+    name: type check (mypy, pyright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # pyright reads its environment from .venv (see pyproject.toml).
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install ".[typecheck]"
+      - run: .venv/bin/mypy
+      - run: .venv/bin/pyright
+
   macos-system-python:
     # The reviewer will most likely use the python3 that ships with macOS.
     name: submission output with macOS system Python

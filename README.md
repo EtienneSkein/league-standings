@@ -52,7 +52,17 @@ To also install the `league-table` command (this needs pip 21.3 or newer), run
 
 GitHub Actions runs the whole suite on macOS, Linux and Windows with Python
 3.9, 3.12 and 3.13 on every push. It also checks the submission output using
-the `python3` that ships with macOS.
+the `python3` that ships with macOS, and type-checks the code with mypy and
+pyright. Pyright checks against Python 3.9, so code that needs a newer Python
+fails the build.
+
+To run the type checks locally:
+
+```sh
+pip install ".[typecheck]"
+mypy
+pyright
+```
 
 ## Input format
 
