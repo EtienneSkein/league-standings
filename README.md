@@ -46,8 +46,9 @@ To also install the `league-table` command (this needs pip 21.3 or newer), run
 | `tests/test_1974_75_data.py` | **The answer is right.** The app's final 1974/75 table, calculated from all 462 results, matches the published final table exactly, row by row. The week-10 input contains exactly the 22 real clubs, the right date range and no repeated fixtures. It is also exactly the full season cut off at week 10. |
 | `tests/test_table.py` | The rules: 2 points for a win, goal average rather than goal difference, then goals scored. Also teams that have conceded nothing, shared positions, and averages that look equal when rounded but aren't. |
 | `tests/test_invariants.py` | Totals that must hold for any league, checked on 200 randomly generated leagues (with fixed seeds) and on the real data. Wins equal losses, goals for equal goals against, each match adds 2 points, and shuffling the input never changes the table. |
-| `tests/test_csv_io.py` | Input handling: files saved by Excel (with a byte-order mark and Windows line endings), quoted and accented names, and every kind of invalid row, each with a precise error message. |
-| `tests/test_cli.py` | The command line: files and stdin/stdout, exit codes, unwritable output, UTF-8 on every platform, repeatable output, and the committed output file. |
+| `tests/test_csv_io.py` | Input handling: files saved by Excel (byte-order mark, Windows line endings, empty trailing columns), quoted and accented names, and every kind of invalid or damaged file, each with a precise error message and the correct line number. |
+| `tests/test_cli.py` | The command line: files and stdin/stdout, exit codes, UTF-8 on every platform, repeatable output, refusing to overwrite the input, no half-written output files, pipes closed early, and no Python tracebacks for any bad input. |
+| `tests/test_fuzz.py` | 5,000+ damaged versions of the real input file (bytes flipped, inserted, deleted; text mutated; truncated) and random bytes. Every one must produce a table or a clean error, never a crash. |
 
 GitHub Actions runs the whole suite on macOS, Linux and Windows with Python
 3.9, 3.12 and 3.13 on every push. It also checks the submission output using
@@ -64,24 +65,33 @@ date,home_team,away_team,home_goals,away_goals
 
 | Column | Rules |
 |---|---|
-| `date` | ISO date, `YYYY-MM-DD` |
-| `home_team`, `away_team` | Non-empty and different from each other |
-| `home_goals`, `away_goals` | Whole numbers of 0 or more, digits only (`+1`, `1.0` and `1_0` are rejected) |
+| `date` | A real calendar date written exactly as `YYYY-MM-DD` |
+| `home_team`, `away_team` | Non-empty, different from each other, no control or invisible characters |
+| `home_goals`, `away_goals` | Whole numbers from 0 to 999, plain digits only (`+1`, `1.0` and `1_0` are rejected) |
 
 The file must also be consistent:
 
-- A team's name must be spelled with the same capitalisation everywhere.
-  `Chelsea` and `chelsea` are rejected, so a typo can't create an extra team.
+- A team's name must be written the same way everywhere. Names that differ
+  only in capitalisation or spacing (`Leeds United`, `leeds united`,
+  `Leeds  United`) are rejected, so a typo can't create an extra team. Accented
+  letters are compared in Unicode normal form (NFC), so `Á` typed as one
+  character or as `A` plus an accent counts as the same name.
 - A team plays at most one match per date. This also catches a result that
   has been entered twice.
 
-The file must be UTF-8. A byte-order mark, as added by Excel's "CSV UTF-8"
-option, and Windows line endings are both accepted. Header names are not
-case-sensitive and may appear in any order; extra columns are ignored. Blank
-lines and whitespace around values are ignored.
+The file must be UTF-8 and separated by commas. A byte-order mark (added by
+Excel's "CSV UTF-8" option), Windows line endings and empty trailing columns are
+all accepted. Header names are not case-sensitive and may appear in any order;
+extra columns are ignored. Blank lines and whitespace around values are ignored.
+The same rules apply on every Python version from 3.9.
 
-For any invalid input, the application prints an error with the line number to
-stderr, writes no table and exits with status `1`.
+For any invalid input, the application prints one error line to stderr, naming
+the line where possible, writes no table and exits with status `1`. It never
+shows a Python traceback.
+
+The output file is written to a temporary file first and then moved into place,
+so it is never left half-written. The application refuses to use the input file
+as the output file.
 
 ## Output format
 

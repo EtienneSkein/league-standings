@@ -175,4 +175,99 @@ def test_stdin_is_decoded_as_utf8_on_every_platform():
     data = UTF8_HEADER + "1974-08-17,Álava,B,1,0\n1974-08-24,álava,C,1,0\n".encode("utf-8")
     completed = run_module_with_stdin(data)
     assert completed.returncode == 1
-    assert "team 'álava' differs only in capitalisation from 'Álava'".encode("utf-8") in completed.stderr
+    assert "team 'álava' differs only in capitalisation or spacing from 'Álava'".encode("utf-8") in completed.stderr
+
+
+# --- Protecting files --------------------------------------------------------
+
+
+def test_refuses_to_overwrite_the_input_file(tmp_path, capsys):
+    results = tmp_path / "results.csv"
+    results.write_bytes(RESULTS_FILE.read_bytes())
+    assert main([str(results), "-o", str(results)]) == 1
+    assert "is the input file" in capsys.readouterr().err
+    assert results.read_bytes() == RESULTS_FILE.read_bytes()
+
+
+def test_refuses_input_file_written_differently(tmp_path, monkeypatch, capsys):
+    results = tmp_path / "results.csv"
+    results.write_bytes(RESULTS_FILE.read_bytes())
+    monkeypatch.chdir(tmp_path)
+    assert main(["results.csv", "-o", str(tmp_path / "." / "results.csv")]) == 1
+    assert results.read_bytes() == RESULTS_FILE.read_bytes()
+
+
+def test_no_temporary_files_are_left_behind(tmp_path):
+    output = tmp_path / "table.csv"
+    assert main([str(RESULTS_FILE), "-o", str(output)]) == 0
+    assert [p.name for p in tmp_path.iterdir()] == ["table.csv"]
+
+
+def test_failed_write_keeps_previous_output_and_leaves_no_temporary_file(tmp_path, monkeypatch):
+    output = tmp_path / "table.csv"
+    output.write_text("previous contents")
+
+    def fail(*args, **kwargs):
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr("standings.cli.write_table", fail)
+    assert main([str(RESULTS_FILE), "-o", str(output)]) == 1
+    assert output.read_text() == "previous contents"
+    assert [p.name for p in tmp_path.iterdir()] == ["table.csv"]
+
+
+def test_output_path_that_is_a_directory_exits_1(tmp_path, capsys):
+    assert main([str(RESULTS_FILE), "-o", str(tmp_path)]) == 1
+    assert "cannot write" in capsys.readouterr().err
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_input_path_that_is_a_directory_exits_1(tmp_path, capsys):
+    assert main([str(tmp_path)]) == 1
+    assert "cannot read" in capsys.readouterr().err
+
+
+# --- No Python tracebacks, whatever the input ---------------------------------
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        UTF8_HEADER + "1974-08-17,Mönchengladbach,B,1,0\n".encode("latin-1"),
+        UTF8_HEADER + b"1974-08-17,A\x00,B,1,0\n",
+        UTF8_HEADER + b'1974-08-17,"A,B,1,0\n',
+        UTF8_HEADER + b"1974-08-17," + b"A" * 200_000 + b",B,1,0\n",
+        UTF8_HEADER + b"1974-08-17,A,B," + b"9" * 5000 + b",0\n",
+        UTF8_HEADER + b"19740817,A,B,1,0\n",
+        b"\xff\xfe" + "date,home_team".encode("utf-16-le"),
+        b"\x00" * 100,
+        bytes(range(256)),
+    ],
+    ids=["latin-1", "nul", "unclosed-quote", "huge-field", "huge-score", "compact-date", "utf-16", "all-nul", "all-bytes"],
+)
+def test_bad_input_gives_clean_error_not_traceback(data):
+    completed = run_module_with_stdin(data)
+    assert completed.returncode == 1
+    assert completed.stdout == b""
+    assert completed.stderr.startswith(b"league-table: <stdin>: ")
+    assert b"Traceback" not in completed.stderr
+
+
+def test_reader_closing_the_pipe_early_is_not_an_error_message():
+    # Like `league-table big.csv | head -1`: output larger than the pipe buffer.
+    rows = "".join(f"2000-01-{day:02d},Team {n},Rival {n},1,0\n" for day in range(1, 29) for n in range(300))
+    process = subprocess.Popen(
+        [sys.executable, "-m", "standings"],
+        cwd=PROJECT_ROOT,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    process.stdin.write(UTF8_HEADER + rows.encode("utf-8"))
+    process.stdin.close()
+    assert process.stdout.readline() == b"Pos,Team,Pld,W,D,L,GF,GA,GAv,Pts\n"
+    process.stdout.close()
+    stderr = process.stderr.read()
+    process.wait(timeout=30)
+    process.stderr.close()
+    assert stderr == b""
