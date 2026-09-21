@@ -27,4 +27,8 @@ test submission, so keep it simple, readable and well tested.
 - Input errors raise `InputError` with a line number. The CLI prints them to stderr and exits with status 1.
 - `data/standings_1974-75_week10.csv` is a golden file that `tests/test_cli.py` checks. Regenerate it only when output is meant to change:
   `python -m standings data/results_1974-75_week10.csv -o data/standings_1974-75_week10.csv`
+- Input validation rejects: goals that aren't plain ASCII digits, team names that differ only in capitalisation, and a team with two matches on one date. Every error names the line.
+- Standard streams are switched to UTF-8 with Unix (`\n`) line endings in `cli.py`, so output is identical on every platform.
+- `PUBLISHED_FINAL_TABLE` in `tests/test_1974_75_data.py` is copied from the published 1974/75 final table. Never regenerate it from this code; it is the independent check.
+- CI (`.github/workflows/tests.yml`) runs on macOS, Linux and Windows with Python 3.9, 3.12 and 3.13.
 - Keep the rules in `table.py`, CSV handling in `csv_io.py` and argument handling in `cli.py`.

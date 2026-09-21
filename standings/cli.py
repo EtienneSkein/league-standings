@@ -37,8 +37,20 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _use_utf8_standard_streams() -> None:
+    """Make stdin/stdout/stderr UTF-8 with Unix line endings on every platform.
+
+    Without this, Python uses the system's default encoding, which on Windows
+    is not UTF-8, so team names with accents would be misread.
+    """
+    for stream, newline in ((sys.stdin, ""), (sys.stdout, "\n"), (sys.stderr, None)):
+        if hasattr(stream, "reconfigure"):  # absent on test replacements like StringIO
+            stream.reconfigure(encoding="utf-8", newline=newline)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    _use_utf8_standard_streams()
 
     try:
         if args.input == "-":

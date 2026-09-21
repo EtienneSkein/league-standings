@@ -1,5 +1,7 @@
 # League Standings
 
+[![tests](https://github.com/EtienneSkein/league-standings/actions/workflows/tests.yml/badge.svg)](https://github.com/EtienneSkein/league-standings/actions/workflows/tests.yml)
+
 A command-line application that calculates a football (soccer) league table from
 match results. It applies the rules of the **English First Division, 1974/75**
 and is used here to produce the table in **week 10** of that season.
@@ -37,6 +39,20 @@ pytest
 To also install the `league-table` command (this needs pip 21.3 or newer), run
 `pip install -e ".[test]"`, then `league-table data/results_1974-75_week10.csv`.
 
+### What the tests cover
+
+| File | What it proves |
+|---|---|
+| `tests/test_1974_75_data.py` | **The answer is right.** The app's final 1974/75 table, calculated from all 462 results, matches the published final table exactly, row by row. The week-10 input contains exactly the 22 real clubs, the right date range and no repeated fixtures. It is also exactly the full season cut off at week 10. |
+| `tests/test_table.py` | The rules: 2 points for a win, goal average rather than goal difference, then goals scored. Also teams that have conceded nothing, shared positions, and averages that look equal when rounded but aren't. |
+| `tests/test_invariants.py` | Totals that must hold for any league, checked on 200 randomly generated leagues (with fixed seeds) and on the real data. Wins equal losses, goals for equal goals against, each match adds 2 points, and shuffling the input never changes the table. |
+| `tests/test_csv_io.py` | Input handling: files saved by Excel (with a byte-order mark and Windows line endings), quoted and accented names, and every kind of invalid row, each with a precise error message. |
+| `tests/test_cli.py` | The command line: files and stdin/stdout, exit codes, unwritable output, UTF-8 on every platform, repeatable output, and the committed output file. |
+
+GitHub Actions runs the whole suite on macOS, Linux and Windows with Python
+3.9, 3.12 and 3.13 on every push. It also checks the submission output using
+the `python3` that ships with macOS.
+
 ## Input format
 
 A CSV file with a header row and one match per line:
@@ -49,12 +65,23 @@ date,home_team,away_team,home_goals,away_goals
 | Column | Rules |
 |---|---|
 | `date` | ISO date, `YYYY-MM-DD` |
-| `home_team`, `away_team` | Non-empty and different from each other. Team names must be spelled the same way in every row. |
-| `home_goals`, `away_goals` | Whole numbers of 0 or more |
+| `home_team`, `away_team` | Non-empty and different from each other |
+| `home_goals`, `away_goals` | Whole numbers of 0 or more, digits only (`+1`, `1.0` and `1_0` are rejected) |
 
-The columns may appear in any order. Blank lines and whitespace around values
-are ignored. For any invalid row, the application prints an error with the line
-number to stderr and exits with status `1`.
+The file must also be consistent:
+
+- A team's name must be spelled with the same capitalisation everywhere.
+  `Chelsea` and `chelsea` are rejected, so a typo can't create an extra team.
+- A team plays at most one match per date. This also catches a result that
+  has been entered twice.
+
+The file must be UTF-8. A byte-order mark, as added by Excel's "CSV UTF-8"
+option, and Windows line endings are both accepted. Header names are not
+case-sensitive and may appear in any order; extra columns are ignored. Blank
+lines and whitespace around values are ignored.
+
+For any invalid input, the application prints an error with the line number to
+stderr, writes no table and exits with status `1`.
 
 ## Output format
 
@@ -98,6 +125,8 @@ places.
 
 `data/results_1974-75_week10.csv` is the input. `data/standings_1974-75_week10.csv`
 is the output that the application produces from it.
+`tests/fixtures/results_1974-75_full_season.csv` holds the whole season and is
+used by the tests to check against the published final table.
 
 The results come from the
 [engsoccerdata](https://github.com/jalapic/engsoccerdata) dataset: James P.
@@ -105,7 +134,7 @@ Curley (2016), *engsoccerdata: English Soccer Data 1871-2016*. The dataset is
 free for non-commercial use. As a spot check, the standings it gives on
 5 October 1974 match published tables.
 
-To rebuild the input file from the source (this needs network access):
+To rebuild both results files from the source (this needs network access):
 
 ```sh
 python3 scripts/build_week10_results.py
@@ -119,7 +148,9 @@ standings/
   csv_io.py     # CSV parsing, validation and output
   cli.py        # argument handling, stdin/stdout, exit codes
   __main__.py   # enables `python -m standings`
-tests/          # unit tests and end-to-end CLI tests
+tests/          # tests (see "What the tests cover")
+  fixtures/     # full 1974/75 season results
 data/           # input results and generated table
-scripts/        # rebuilds the input data from the source dataset
+scripts/        # rebuilds the results files from the source dataset
+.github/        # GitHub Actions workflow (macOS, Linux, Windows)
 ```

@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: pytest (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python: ["3.9", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install pytest
+      - run: python -m pytest -v
+
+  macos-system-python:
+    # The reviewer will most likely use the python3 that ships with macOS.
+    name: submission output with macOS system Python
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: /usr/bin/python3 --version
+      - name: File in, file out
+        run: |
+          /usr/bin/python3 -m standings data/results_1974-75_week10.csv -o "$RUNNER_TEMP/table.csv"
+          diff "$RUNNER_TEMP/table.csv" data/standings_1974-75_week10.csv
+      - name: stdin in, stdout out
+        run: /usr/bin/python3 -m standings < data/results_1974-75_week10.csv | diff - data/standings_1974-75_week10.csv
