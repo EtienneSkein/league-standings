@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import errno
+import io
 import os
 import sys
 import tempfile
@@ -47,7 +48,7 @@ def _use_utf8_standard_streams() -> None:
     is not UTF-8, so team names with accents would be misread.
     """
     for stream, newline in ((sys.stdin, ""), (sys.stdout, "\n"), (sys.stderr, None)):
-        if hasattr(stream, "reconfigure"):  # absent on test replacements like StringIO
+        if isinstance(stream, io.TextIOWrapper):  # not test replacements like StringIO
             stream.reconfigure(encoding="utf-8", newline=newline)
 
 

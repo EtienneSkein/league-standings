@@ -6,7 +6,7 @@ import csv
 import re
 import unicodedata
 from datetime import date
-from typing import Iterable, TextIO
+from typing import Iterable, Sequence, TextIO
 
 from standings.table import MatchResult, Standing
 
@@ -92,7 +92,7 @@ def _parse_row(row: dict[str, str], line: int) -> MatchResult:
     )
 
 
-def _normalise_header(fieldnames: list[str] | None) -> list[str]:
+def _normalise_header(fieldnames: Sequence[str] | None) -> list[str]:
     header = [name.replace(_BYTE_ORDER_MARK, "").strip().lower() for name in fieldnames or []]
     duplicates = sorted({name for name in header if name and header.count(name) > 1})
     if duplicates:

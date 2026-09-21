@@ -21,3 +21,9 @@ packages = ["standings"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.pyright]
+# Use the project's virtual environment (where pytest is installed), so
+# editors such as VS Code (Pylance) resolve imports correctly.
+venvPath = "."
+venv = ".venv"

@@ -263,6 +263,8 @@ def test_reader_closing_the_pipe_early_is_not_an_error_message():
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+    # All three are pipes because of PIPE above; the asserts tell type checkers.
+    assert process.stdin and process.stdout and process.stderr
     process.stdin.write(UTF8_HEADER + rows.encode("utf-8"))
     process.stdin.close()
     assert process.stdout.readline() == b"Pos,Team,Pld,W,D,L,GF,GA,GAv,Pts\n"

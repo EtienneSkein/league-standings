@@ -19,17 +19,17 @@ INTERESTING_BYTES = b'",\r\n\x00\t -+0123456789\xef\xbb\xbf\xc3\xa9\xff'
 
 
 def mutate(data: bytes, rng: random.Random) -> bytes:
-    data = bytearray(data)
+    buffer = bytearray(data)  # editable copy
     for _ in range(rng.randint(1, 8)):
-        position = rng.randrange(len(data) + 1)
+        position = rng.randrange(len(buffer) + 1)
         choice = rng.random()
-        if choice < 0.3 and data:
-            del data[position : position + rng.randint(1, 20)]
+        if choice < 0.3 and buffer:
+            del buffer[position : position + rng.randint(1, 20)]
         elif choice < 0.6:
-            data[position:position] = bytes(rng.choice(INTERESTING_BYTES) for _ in range(rng.randint(1, 5)))
-        elif data:
-            data[min(position, len(data) - 1)] = rng.randrange(256)
-    return bytes(data)
+            buffer[position:position] = bytes(rng.choice(INTERESTING_BYTES) for _ in range(rng.randint(1, 5)))
+        elif buffer:
+            buffer[min(position, len(buffer) - 1)] = rng.randrange(256)
+    return bytes(buffer)
 
 
 VALID_TEXT = VALID_FILE.decode("utf-8")
