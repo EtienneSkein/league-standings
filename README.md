@@ -6,6 +6,41 @@ A command-line application that calculates a football (soccer) league table from
 match results. It applies the rules of the **English First Division, 1974/75**
 and is used here to produce the table in **week 10** of that season.
 
+## Result: week 10 standings
+
+The English First Division table after week 10 of 1974/75 (all matches up to
+Saturday 19 October 1974), exactly as the application writes it to
+[`data/standings_1974-75_week10.csv`](data/standings_1974-75_week10.csv).
+Ties on points are split by goal average (GAv), so Liverpool top Manchester
+City on 19 points.
+
+<!-- standings:start -->
+| Pos | Team | Pld | W | D | L | GF | GA | GAv | Pts |
+| ---: | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | Liverpool | 13 | 9 | 1 | 3 | 21 | 8 | 2.625 | 19 |
+| 2 | Manchester City | 14 | 8 | 3 | 3 | 19 | 15 | 1.267 | 19 |
+| 3 | Ipswich Town | 14 | 8 | 1 | 5 | 18 | 9 | 2.000 | 17 |
+| 4 | Everton | 14 | 4 | 9 | 1 | 19 | 16 | 1.188 | 17 |
+| 5 | Middlesbrough | 13 | 6 | 4 | 3 | 19 | 14 | 1.357 | 16 |
+| 6 | Stoke City | 13 | 6 | 4 | 3 | 20 | 15 | 1.333 | 16 |
+| 7 | Derby County | 14 | 5 | 6 | 3 | 21 | 19 | 1.105 | 16 |
+| 8 | Burnley | 14 | 7 | 1 | 6 | 23 | 23 | 1.000 | 15 |
+| 9 | Newcastle United | 13 | 5 | 5 | 3 | 19 | 19 | 1.000 | 15 |
+| 10 | West Ham United | 14 | 5 | 4 | 5 | 25 | 22 | 1.136 | 14 |
+| 11 | Birmingham City | 14 | 6 | 2 | 6 | 20 | 20 | 1.000 | 14 |
+| 12 | Wolverhampton Wanderers | 14 | 4 | 6 | 4 | 15 | 15 | 1.000 | 14 |
+| 13 | Sheffield United | 14 | 5 | 4 | 5 | 19 | 24 | 0.792 | 14 |
+| 14 | Carlisle United | 14 | 5 | 3 | 6 | 12 | 12 | 1.000 | 13 |
+| 15 | Coventry City | 13 | 3 | 6 | 4 | 18 | 23 | 0.783 | 12 |
+| 16 | Leeds United | 13 | 4 | 3 | 6 | 16 | 15 | 1.067 | 11 |
+| 17 | Chelsea | 13 | 3 | 5 | 5 | 13 | 20 | 0.650 | 11 |
+| 18 | Leicester City | 12 | 3 | 4 | 5 | 16 | 18 | 0.889 | 10 |
+| 19 | Tottenham Hotspur | 13 | 4 | 1 | 8 | 16 | 20 | 0.800 | 9 |
+| 20 | Queens Park Rangers | 13 | 2 | 5 | 6 | 11 | 16 | 0.688 | 9 |
+| 21 | Luton Town | 14 | 1 | 6 | 7 | 12 | 21 | 0.571 | 8 |
+| 22 | Arsenal | 13 | 2 | 3 | 8 | 12 | 20 | 0.600 | 7 |
+<!-- standings:end -->
+
 ## Requirements
 
 - Python 3.9 or newer, so the `python3` that ships with macOS works. The
@@ -144,7 +179,11 @@ places.
   on Saturday 17 August 1974, so week 10 is the week of Saturday 19 October
   1974. The input contains every First Division match up to and including that
   week: 148 matches. Teams have played 12 to 14 games each by then, because
-  there were also midweek fixtures.
+  there were also midweek fixtures. The other reading, "after 10 rounds of
+  fixtures", was considered and set aside: because of those midweek games,
+  teams reached their 10th match on different dates, so it matches no single
+  moment in the season, whereas the calendar week gives the table as it
+  actually stood on 19 October 1974.
 
 ## Data
 
