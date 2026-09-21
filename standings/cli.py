@@ -15,11 +15,14 @@ from standings.table import Standing, compute_table
 
 EXIT_OK = 0
 EXIT_ERROR = 1
+# Name of the installed console script. `python -m standings` passes its own
+# name, so --help and error messages show the command actually typed.
+DEFAULT_PROG = "league-table"
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(prog: str = DEFAULT_PROG) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="league-table",
+        prog=prog,
         description=(
             "Calculate a football league table from match results using "
             "1974/75 English First Division rules (2 points for a win, "
@@ -52,8 +55,8 @@ def _use_utf8_standard_streams() -> None:
             stream.reconfigure(encoding="utf-8", newline=newline)
 
 
-def _error(message: str) -> int:
-    print(f"league-table: {message}", file=sys.stderr)
+def _error(prog: str, message: str) -> int:
+    print(f"{prog}: {message}", file=sys.stderr)
     return EXIT_ERROR
 
 
@@ -79,7 +82,7 @@ def _write_file_atomically(standings: Iterable[Standing], path: str) -> None:
         raise
 
 
-def _write_stdout(standings: Iterable[Standing]) -> int:
+def _write_stdout(standings: Iterable[Standing], prog: str) -> int:
     try:
         write_table(standings, sys.stdout)
         sys.stdout.flush()
@@ -92,16 +95,16 @@ def _write_stdout(standings: Iterable[Standing]) -> int:
         # EINVAL on Windows. That is not worth an error message.
         if error.errno in (errno.EPIPE, errno.EINVAL):
             return EXIT_ERROR
-        return _error(f"cannot write <stdout>: {error.strerror}")
+        return _error(prog, f"cannot write <stdout>: {error.strerror}")
     return EXIT_OK
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+def main(argv: Sequence[str] | None = None, prog: str = DEFAULT_PROG) -> int:
+    args = build_parser(prog).parse_args(argv)
     _use_utf8_standard_streams()
 
     if _is_same_file(args.input, args.output):
-        return _error(f"output {args.output} is the input file; choose a different output file")
+        return _error(prog, f"output {args.output} is the input file; choose a different output file")
 
     source = "<stdin>" if args.input == "-" else args.input
     try:
@@ -111,16 +114,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             with open(args.input, newline="", encoding="utf-8") as stream:
                 results = read_results(stream)
     except OSError as error:
-        return _error(f"cannot read {args.input}: {error.strerror}")
+        return _error(prog, f"cannot read {args.input}: {error.strerror}")
     except InputError as error:
-        return _error(f"{source}: {error}")
+        return _error(prog, f"{source}: {error}")
 
     standings = compute_table(results)
 
     if args.output == "-":
-        return _write_stdout(standings)
+        return _write_stdout(standings, prog)
     try:
         _write_file_atomically(standings, args.output)
     except OSError as error:
-        return _error(f"cannot write {args.output}: {error.strerror}")
+        return _error(prog, f"cannot write {args.output}: {error.strerror}")
     return EXIT_OK

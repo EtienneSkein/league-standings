@@ -65,6 +65,22 @@ def test_help_exits_0(capsys):
     assert "usage: league-table" in capsys.readouterr().out
 
 
+def test_module_help_shows_the_command_actually_typed():
+    completed = subprocess.run(
+        [sys.executable, "-m", "standings", "--help"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert completed.stdout.startswith("usage: python -m standings ")
+
+
+def test_module_errors_are_prefixed_with_the_command_actually_typed():
+    completed = run_module_with_stdin(b"garbage\n")
+    assert completed.stderr.startswith(b"python -m standings: <stdin>: header is missing")
+
+
 def test_unknown_option_exits_2(capsys):
     with pytest.raises(SystemExit) as exit_:
         main(["--bogus"])
@@ -249,7 +265,7 @@ def test_bad_input_gives_clean_error_not_traceback(data):
     completed = run_module_with_stdin(data)
     assert completed.returncode == 1
     assert completed.stdout == b""
-    assert completed.stderr.startswith(b"league-table: <stdin>: ")
+    assert completed.stderr.startswith(b"python -m standings: <stdin>: ")
     assert b"Traceback" not in completed.stderr
 
 
