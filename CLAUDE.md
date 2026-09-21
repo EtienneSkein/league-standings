@@ -27,7 +27,7 @@ test submission, so keep it simple, readable and well tested.
 - Input errors raise `InputError` with a line number. The CLI prints them to stderr and exits with status 1.
 - `data/standings_1974-75_week10.csv` is a golden file that `tests/test_cli.py` checks. Regenerate it only when output is meant to change:
   `python -m standings data/results_1974-75_week10.csv -o data/standings_1974-75_week10.csv`
-- Input validation rejects: goals that aren't plain ASCII digits or exceed `MAX_GOALS` (999), dates not written exactly `YYYY-MM-DD` (newer Pythons' `fromisoformat` accepts more, so check the shape first), team names with control/invisible characters, names that differ only in capitalisation or spacing (compared after NFC normalisation), and a team with two matches on one date. Every error names the line.
+- Input validation rejects: goals that aren't plain ASCII digits or exceed `MAX_GOALS` (999), dates not written exactly `YYYY-MM-DD` (newer Pythons' `fromisoformat` accepts more, so check the shape first), team names with control/invisible characters or starting with `=`, `+`, `-`, `@` (CSV injection; `FORMULA_PREFIXES`), names that differ only in capitalisation or spacing (compared after NFC normalisation), and a team with two matches on one date. Every error names the line.
 - Behaviour must be identical on Python 3.9 to 3.13. Watch for standard-library differences (csv NUL handling, `int()` digit limits, `date.fromisoformat`).
 - No input may produce a traceback: all input problems become `InputError`. `tests/test_fuzz.py` enforces this; keep it passing.
 - Output files are written atomically (temp file + `os.replace`). Never write the output over the input file.

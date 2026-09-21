@@ -22,6 +22,11 @@ MAX_GOALS = 999
 # date.fromisoformat() accepts more formats from Python 3.11 (e.g. "19740817",
 # "1974-W33-6"), so check the shape first to behave the same on every version.
 _DATE_PATTERN = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+# Team names are copied into the output table. A cell starting with one of
+# these is run as a formula when opened in Excel and similar programs
+# ("CSV injection"), so such names are rejected. Leading tabs and carriage
+# returns, the other risky prefixes, are already rejected as control characters.
+FORMULA_PREFIXES = ("=", "+", "-", "@")
 # Spreadsheet programs often start UTF-8 files with a byte order mark.
 _BYTE_ORDER_MARK = "\ufeff"
 
@@ -53,6 +58,11 @@ def _parse_team(value: str, column: str, line: int) -> str:
     name = unicodedata.normalize("NFC", value)
     if any(unicodedata.category(char).startswith("C") for char in name):
         raise InputError(f"line {line}: {column} contains a control or invisible character: {name!r}")
+    if name.startswith(FORMULA_PREFIXES):
+        raise InputError(
+            f"line {line}: {column} cannot start with {name[0]!r}, because spreadsheet "
+            f"programs would run it as a formula: {name!r}"
+        )
     return name
 
 

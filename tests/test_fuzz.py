@@ -4,13 +4,14 @@ Mutations are generated with fixed seeds, so every run is identical and any
 failure can be reproduced from its test id.
 """
 
+import csv
 import io
 import random
 from pathlib import Path
 
 import pytest
 
-from standings.csv_io import InputError, read_results, write_table
+from standings.csv_io import FORMULA_PREFIXES, InputError, read_results, write_table
 from standings.table import compute_table
 
 VALID_FILE = (Path(__file__).resolve().parent.parent / "data" / "results_1974-75_week10.csv").read_bytes()
@@ -37,6 +38,7 @@ INTERESTING_TEXT = [
     '"', ",", "\n", "\r\n", " ", "\t", "\u00a0", "\u200b", "\u0301", "\ufeff",
     "-", "+", "_", ".", "0", "1", "9", "999", "1000", "\u0661", "W", "T",
     "a", "A", "é", "É", "Liverpool", "liverpool", "1974-08-17", "1974-02-30",
+    "=", "@", ",=SUM(1)", ',"-2+3",',
 ]  # fmt: skip
 
 
@@ -64,7 +66,11 @@ def run(data: bytes) -> None:
         results = read_results(stream)
     except InputError:
         return
-    write_table(compute_table(results), io.StringIO())
+    output = io.StringIO()
+    write_table(compute_table(results), output)
+    # No accepted team name may start a spreadsheet formula (CSV injection).
+    for row in csv.reader(io.StringIO(output.getvalue())):
+        assert not row[1].startswith(FORMULA_PREFIXES)
 
 
 @pytest.mark.parametrize("seed", range(2000))

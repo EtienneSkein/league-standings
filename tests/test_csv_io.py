@@ -327,6 +327,28 @@ def test_rejects_invisible_or_control_characters_in_names(name):
         read(HEADER + f"1974-08-17,{name},B,1,0\n")
 
 
+@pytest.mark.parametrize("prefix", ["=", "+", "-", "@"])
+@pytest.mark.parametrize("column", ["home_team", "away_team"])
+def test_rejects_names_that_spreadsheets_would_run_as_formulas(prefix, column):
+    name = prefix + 'HYPERLINK("http://example.com","Click")'
+    home, away = (name, "B") if column == "home_team" else ("A", name)
+    with pytest.raises(InputError) as error:
+        read(HEADER + f'1974-08-17,"{home.replace(chr(34), chr(34) * 2)}","{away.replace(chr(34), chr(34) * 2)}",1,0\n')
+    assert str(error.value).startswith(
+        f"line 2: {column} cannot start with {prefix!r}, because spreadsheet programs would run it as a formula"
+    )
+
+
+def test_formula_prefix_after_surrounding_spaces_is_still_rejected():
+    with pytest.raises(InputError, match="cannot start with '='"):
+        read(HEADER + '1974-08-17,"  =1+1",B,1,0\n')
+
+
+@pytest.mark.parametrize("name", ["A=B", "Brighton & Hove Albion", "Team+", "Stoke-on-Trent", "Club @ Home"])
+def test_formula_characters_inside_a_name_are_allowed(name):
+    assert read(HEADER + f"1974-08-17,{name},B,1,0\n")[0].home_team == name
+
+
 def test_team_cannot_play_itself_under_a_different_spelling():
     with pytest.raises(InputError, match="cannot play itself"):
         read(HEADER + "1974-08-17,Leeds United,leeds  united,1,0\n")

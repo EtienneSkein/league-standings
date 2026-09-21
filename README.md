@@ -66,7 +66,7 @@ date,home_team,away_team,home_goals,away_goals
 | Column | Rules |
 |---|---|
 | `date` | A real calendar date written exactly as `YYYY-MM-DD` |
-| `home_team`, `away_team` | Non-empty, different from each other, no control or invisible characters |
+| `home_team`, `away_team` | Non-empty, different from each other, no control or invisible characters, and not starting with `=`, `+`, `-` or `@` |
 | `home_goals`, `away_goals` | Whole numbers from 0 to 999, plain digits only (`+1`, `1.0` and `1_0` are rejected) |
 
 The file must also be consistent:
@@ -78,6 +78,11 @@ The file must also be consistent:
   character or as `A` plus an accent counts as the same name.
 - A team plays at most one match per date. This also catches a result that
   has been entered twice.
+
+Team names are copied into the output table. Excel and similar programs run a
+cell starting with `=`, `+`, `-` or `@` as a formula ("CSV injection"), so names
+starting with those characters are rejected. They may still appear inside a
+name, as in `Brighton & Hove Albion` or `Stoke-on-Trent`.
 
 The file must be UTF-8 and separated by commas. A byte-order mark (added by
 Excel's "CSV UTF-8" option), Windows line endings and empty trailing columns are
